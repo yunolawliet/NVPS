@@ -57,6 +57,7 @@ refresh_pattern . 0 20% 4320
 visible_hostname Wangzki
 END
 sed -i $MYIP2 /etc/squid/squid.conf;
+service ssh restart
 
 cd /root
 wget "https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/plugin.tgz"
@@ -139,20 +140,18 @@ verb 3
 ncp-disable
 cipher none
 auth none
-
 END
+
 systemctl start openvpn@server
+
 #Create OpenVPN Config
 mkdir -p /home/vps/public_html
 cat > /home/vps/public_html/client.ovpn <<-END
-#:D
 auth-user-pass
 client
 dev tun
 proto tcp
 remote $MYIP 1147
-http-proxy $MYIP 8080
-http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.0"
 persist-key
 persist-tun
 pull
@@ -168,19 +167,18 @@ connect-retry-max 8080
 mute-replay-warnings
 redirect-gateway def1
 script-security 2
-auth-nocache 
-setenv CLIENT_CERT 0
-persist-tun
 cipher none
 auth none
-auth-user-pass
+http-proxy $MYIP 8080
+ttp-proxy-option CUSTOM-HEADER ""
+http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.0"
+http-proxy-option CUSTOM-HEADER Proxy-Connection: keep-alive
 END
 echo '<ca>' >> /home/vps/public_html/client.ovpn
 cat /etc/openvpn/ca.crt >> /home/vps/public_html/client.ovpn
 echo '</ca>' >> /home/vps/public_html/client.ovpn
 
 cat > /home/vps/public_html/OpenVPN-Stunnel.ovpn <<-END
-
 auth-user-pass
 client
 dev tun
@@ -202,12 +200,8 @@ connect-retry-max 8080
 mute-replay-warnings
 redirect-gateway def1
 script-security 2
-auth-nocache 
-setenv CLIENT_CERT 0
-persist-tun
 cipher none
 auth none
-auth-user-pass
 END
 echo '<ca>' >> /home/vps/public_html/OpenVPN-Stunnel.ovpn
 cat /etc/openvpn/ca.crt >> /home/vps/public_html/OpenVPN-Stunnel.ovpn
@@ -240,11 +234,6 @@ client = no
 [openvpn]
 accept = 587
 connect = 127.0.0.1:1147
-cert = /etc/stunnel/stunnel.pem
-
-[dropbear]
-accept = 443
-connect = 127.0.0.1:442
 cert = /etc/stunnel/stunnel.pem
 
 END
@@ -308,9 +297,9 @@ iptables-restore < /etc/iptables.up.rules
 # Create and Configure rc.local
 cat > /etc/rc.local <<-END
 #!/bin/sh -e
-
 exit 0
 END
+
 chmod +x /etc/rc.local
 sed -i '$ i\echo "nameserver 8.8.8.8" > /etc/resolv.conf' /etc/rc.local
 sed -i '$ i\echo "nameserver 8.8.4.4" >> /etc/resolv.conf' /etc/rc.local
