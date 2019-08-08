@@ -171,6 +171,8 @@ script-security 2
 auth-nocache 
 setenv CLIENT_CERT 0
 persist-tun
+cipher none
+auth none
 auth-user-pass
 END
 echo '<ca>' >> /home/vps/public_html/client.ovpn
@@ -200,8 +202,12 @@ connect-retry-max 8080
 mute-replay-warnings
 redirect-gateway def1
 script-security 2
+auth-nocache 
+setenv CLIENT_CERT 0
+persist-tun
 cipher none
 auth none
+auth-user-pass
 END
 echo '<ca>' >> /home/vps/public_html/OpenVPN-Stunnel.ovpn
 cat /etc/openvpn/ca.crt >> /home/vps/public_html/OpenVPN-Stunnel.ovpn
@@ -355,9 +361,10 @@ service fail2ban restart
 service squid restart
 
 #clearing history
-history -c
+#history -c
 rm -rf /root/*
 cd /root
+
 # info
 clear
 echo " "
@@ -380,8 +387,8 @@ echo "   - Squid Proxy	: 3128, 8080 (limit to IP Server)"  | tee -a log-install.
 echo "   - Nginx		: 80"  | tee -a log-install.txt
 echo "   - Download Config OpenVPN : http://$MYIP/client.opvn"  | tee -a log-install.txt
 echo "-----Rebooting your VPS -----"
-sleep 5
-reboot
+#sleep 5
+#reboot
 
 
 
