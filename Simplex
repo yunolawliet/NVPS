@@ -355,7 +355,7 @@ rm -rf /root/*
 cd /root
 
 # info
-clear
+#clear
 echo " "
 echo "Installation has been completed!!"
 echo "DEVICE WILL REBOOT IN 10 SECONDS"
