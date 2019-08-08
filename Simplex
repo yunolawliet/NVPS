@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #sudo su -
-#wget https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/Deb9 && chmod +x Deb9 && ./Deb9
+#wget https://raw.githubusercontent.com/yunolawliet/NVPS/master/Simplex && chmod +x Simplex && ./Simplex
 #type 'menu' to see list
 
 wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg|apt-key add -
@@ -11,7 +11,14 @@ echo "deb http://build.openvpn.net/debian/openvpn/release/2.4 stretch main" > /e
 #Requirement
 apt update
 apt upgrade -y
-apt install openvpn easy-rsa build-essential ufw squid -y
+apt install openvpn -y
+apt install easy-rsa -y
+apt install ufw -y
+apt install squid -y
+apt install nginx -y
+apt install php7.0-fpm -y
+apt install fail2ban -y
+apt install build-essential -y
 
 # initializing var
 MYIP=$(curl -s4 http://ifconfig.me)
@@ -60,18 +67,17 @@ echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 ln -fs /usr/share/zoneinfo/Asia/Manila /etc/localtime
 
 #install OpenVPN
-cp -r /usr/share/easy-rsa/ /etc/openvpn
-mkdir /etc/openvpn/easy-rsa
+cp -r /usr/share/easy-rsa /etc/openvpn
 mkdir /etc/openvpn/easy-rsa/keys
 
 sed -i 's|export KEY_COUNTRY="US"|export KEY_COUNTRY="PH"|' /etc/openvpn/easy-rsa/vars
-sed -i 's|export KEY_PROVINCE="CA"|export KEY_PROVINCE="Rizal"|' /etc/openvpn/easy-rsa/vars
-sed -i 's|export KEY_CITY="SanFrancisco"|export KEY_CITY="Antipolo"|' /etc/openvpn/easy-rsa/vars
-sed -i 's|export KEY_ORG="Fort-Funston"|export KEY_ORG="EZ"|' /etc/openvpn/easy-rsa/vars
-sed -i 's|export KEY_EMAIL="me@myhost.mydomain"|export KEY_EMAIL="ezvpn@gmail.com"|' /etc/openvpn/easy-rsa/vars
-sed -i 's|export KEY_OU="MyOrganizationalUnit"|export KEY_OU="EZvpn"|' /etc/openvpn/easy-rsa/vars
-sed -i 's|export KEY_NAME="EasyRSA"|export KEY_NAME="EZvpn"|' /etc/openvpn/easy-rsa/vars
-sed -i 's|export KEY_OU=changeme|export KEY_OU=EZvpn|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_PROVINCE="CA"|export KEY_PROVINCE="Metro Manila"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_CITY="SanFrancisco"|export KEY_CITY="Manila"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_ORG="Fort-Funston"|export KEY_ORG="SimplexVpn"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_EMAIL="me@myhost.mydomain"|export KEY_EMAIL="admin@simplexvpn.com"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_OU="MyOrganizationalUnit"|export KEY_OU="SimplexVpn"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_NAME="EasyRSA"|export KEY_NAME="SimplexVpn"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_OU=changeme|export KEY_OU=SimplexVpn|' /etc/openvpn/easy-rsa/vars
 
 #Create Diffie-Helman Pem
 openssl dhparam -out /etc/openvpn/dh2048.pem 2048
@@ -92,7 +98,6 @@ export EASY_RSA="${EASY_RSA:-.}"
 "$EASY_RSA/pkitool" client
 
 cd
-#cp /etc/openvpn/easy-rsa/keys/{server.crt,server.key} /etc/openvpn
 cp /etc/openvpn/easy-rsa/keys/server.crt /etc/openvpn/server.crt
 cp /etc/openvpn/easy-rsa/keys/server.key /etc/openvpn/server.key
 cp /etc/openvpn/easy-rsa/keys/ca.crt /etc/openvpn/ca.crt
@@ -139,12 +144,14 @@ systemctl start openvpn@server
 #Create OpenVPN Config
 mkdir -p /home/vps/public_html
 cat > /home/vps/public_html/client.ovpn <<-END
-
+#:D
 auth-user-pass
 client
 dev tun
 proto tcp
 remote $MYIP 1147
+http-proxy $MYIP 8080
+http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.0"
 persist-key
 persist-tun
 pull
@@ -162,8 +169,9 @@ redirect-gateway def1
 script-security 2
 cipher none
 auth none
-http-proxy $MYIP 8080
-http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.0"
+setenv CLIENT_CERT 0
+persist-tun
+auth-user-pass
 END
 echo '<ca>' >> /home/vps/public_html/client.ovpn
 cat /etc/openvpn/ca.crt >> /home/vps/public_html/client.ovpn
@@ -234,12 +242,6 @@ connect = 127.0.0.1:442
 cert = /etc/stunnel/stunnel.pem
 
 END
-
-#Setting UFW
-ufw allow ssh
-ufw allow 1147/tcp
-sed -i 's|DEFAULT_INPUT_POLICY="DROP"|DEFAULT_INPUT_POLICY="ACCEPT"|' /etc/default/ufw
-sed -i 's|DEFAULT_FORWARD_POLICY="DROP"|DEFAULT_FORWARD_POLICY="ACCEPT"|' /etc/default/ufw
 
 # set ipv4 forward
 echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -323,12 +325,22 @@ sed -i '$ i\echo "nameserver 8.8.8.8" > /etc/resolv.conf' /etc/rc.local
 sed -i '$ i\echo "nameserver 8.8.4.4" >> /etc/resolv.conf' /etc/rc.local
 sed -i '$ i\iptables-restore < /etc/iptables.up.rules' /etc/rc.local
 
+#Setting UFW
+ufw allow ssh
+ufw allow 1147/tcp
+sed -i 's|DEFAULT_INPUT_POLICY="DROP"|DEFAULT_INPUT_POLICY="ACCEPT"|' /etc/default/ufw
+sed -i 's|DEFAULT_FORWARD_POLICY="DROP"|DEFAULT_FORWARD_POLICY="ACCEPT"|' /etc/default/ufw
+
+# Configure Nginx
+sed -i 's/\/var\/www\/html;/\/home\/vps\/public_html\/;/g' /etc/nginx/sites-enabled/default
+cp /var/www/html/index.nginx-debian.html /home/vps/public_html/index.html
+
 # Configure menu
-apt-get install unzip
-cd /usr/local/bin/
-wget "https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/premiummenu.zip" 
-unzip premiummenu.zip
-chmod +x /usr/local/bin/*
+#apt-get install unzip
+#cd /usr/local/bin/
+#wget "https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/premiummenu.zip" 
+#unzip premiummenu.zip
+#chmod +x /usr/local/bin/*
 
 # add eth0 to vnstat
 vnstat -u -i eth0
@@ -340,6 +352,12 @@ zip configs.zip client.ovpn OpenVPN-Stunnel.ovpn stunnel.conf
 # install libxml-parser
 apt-get install -y libxml-parser-perl
 
+#Write reboot every 4AM on cron
+crontab -l > mycron
+echo "00 04 * * * sudo reboot" >> mycron
+crontab mycron
+rm mycron
+
 # finalizing
 vnstat -u -i eth0
 apt-get -y autoremove
@@ -348,7 +366,6 @@ service nginx start
 service php7.0-fpm start
 service vnstat restart
 service openvpn restart
-service dropbear restart
 service fail2ban restart
 service squid restart
 
@@ -366,31 +383,17 @@ echo " "
 echo "--------------------------- Configuration Setup Server -------------------------"
 echo ""  | tee -a log-install.txt
 echo "Server Information"  | tee -a log-install.txt
-echo "   - Timezone    : Asia/Manila (GMT +8)"  | tee -a log-install.txt
-echo "   - Fail2Ban    : [ON]"  | tee -a log-install.txt
-echo "   - IPtables    : [ON]"  | tee -a log-install.txt
-echo "   - Auto-Reboot : [OFF]"  | tee -a log-install.txt
-echo "   - IPv6        : [OFF]"  | tee -a log-install.txt
+echo "   - Timezone		: Asia/Manila (GMT +8)"  | tee -a log-install.txt
+echo "   - Fail2Ban		: [ON]"  | tee -a log-install.txt
+echo "   - IPtables		: [ON]"  | tee -a log-install.txt
+echo "   - Auto-Reboot	: [ON]"  | tee -a log-install.txt
+echo "   - IPv6			: [OFF]"  | tee -a log-install.txt
 echo ""  | tee -a log-install.txt
 echo "Application & Port Information"  | tee -a log-install.txt
 echo "   - OpenVPN		: TCP 1147 "  | tee -a log-install.txt
 echo "   - OpenVPN-Stunnel	: 587 "  | tee -a log-install.txt
-echo "   - Dropbear		: 442"  | tee -a log-install.txt
-echo "   - Stunnel	: 443"  | tee -a log-install.txt
 echo "   - Squid Proxy	: 3128, 8080 (limit to IP Server)"  | tee -a log-install.txt
 echo "   - Nginx		: 80"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "Premium Script Information"  | tee -a log-install.txt
-echo "   To display list of commands: menu"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "Important Information"  | tee -a log-install.txt
-echo "   - Download Config OpenVPN : http://$MYIP/configs.zip"  | tee -a log-install.txt
-echo "   - Installation Log        : cat /root/log-install.txt"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "   - Webmin                  : http://$MYIP:10000/"  | tee -a log-install.txt
-echo ""
 echo "-----Rebooting your VPS -----"
 sleep 5
 reboot
