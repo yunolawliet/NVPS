@@ -18,6 +18,7 @@ apt install squid -y
 apt install nginx -y
 apt install php7.0-fpm -y
 apt install fail2ban -y
+apt install fail2ban vnstat -y
 apt install build-essential -y
 
 # initializing var
@@ -167,8 +168,7 @@ connect-retry-max 8080
 mute-replay-warnings
 redirect-gateway def1
 script-security 2
-cipher none
-auth none
+auth-nocache 
 setenv CLIENT_CERT 0
 persist-tun
 auth-user-pass
@@ -266,8 +266,6 @@ COMMIT
 :FORWARD ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
 :fail2ban-ssh - [0:0]
--A FORWARD -s 10.8.1.0/24 -p tcp --dport 443 -j DROP
--A FORWARD -i tun+ -j ACCEPT
 -A INPUT -p tcp -m multiport --dports 22 -j fail2ban-ssh
 -A INPUT -p ICMP --icmp-type 8 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 53 -j ACCEPT
@@ -284,19 +282,6 @@ COMMIT
 -A INPUT -p tcp --dport 8080  -m state --state NEW -j ACCEPT
 -A INPUT -p udp --dport 8080  -m state --state NEW -j ACCEPT 
 -A INPUT -p tcp --dport 10000  -m state --state NEW -j ACCEPT
--A INPUT -m string --string "BitTorrent" --algo bm -j DROP
--A INPUT -m string --string "BitTorrent protocol" --algo bm -j DROP
--A INPUT -m string --string "peer_id=" --algo bm -j DROP
--A INPUT -m string --string ".torrent" --algo bm -j DROP
--A INPUT -m string --string ".magnet" --algo bm -j DROP
--A INPUT -m string --string "announce.php?passkey=" --algo bm -j DROP
--A INPUT -m string --string "torrent" --algo bm -j DROP
--A INPUT -m string --string "announce" --algo bm -j DROP
--A INPUT -m string --string "info_hash" --algo bm -j DROP
--A INPUT -m string --string "tracker" --algo bm -j DROP
--A INPUT -m string --string "get_peers" --algo bm -j DROP
--A INPUT -m string --string "announce_peer" --algo bm -j DROP
--A INPUT -m string --string "find_node" --algo bm -j DROP
 -A fail2ban-ssh -j RETURN
 COMMIT
 *raw
@@ -387,13 +372,13 @@ echo "   - Timezone		: Asia/Manila (GMT +8)"  | tee -a log-install.txt
 echo "   - Fail2Ban		: [ON]"  | tee -a log-install.txt
 echo "   - IPtables		: [ON]"  | tee -a log-install.txt
 echo "   - Auto-Reboot	: [ON]"  | tee -a log-install.txt
-echo "   - IPv6			: [OFF]"  | tee -a log-install.txt
 echo ""  | tee -a log-install.txt
 echo "Application & Port Information"  | tee -a log-install.txt
 echo "   - OpenVPN		: TCP 1147 "  | tee -a log-install.txt
 echo "   - OpenVPN-Stunnel	: 587 "  | tee -a log-install.txt
 echo "   - Squid Proxy	: 3128, 8080 (limit to IP Server)"  | tee -a log-install.txt
 echo "   - Nginx		: 80"  | tee -a log-install.txt
+echo "   - Download Config OpenVPN : http://$MYIP/client.opvn"  | tee -a log-install.txt
 echo "-----Rebooting your VPS -----"
 sleep 5
 reboot
