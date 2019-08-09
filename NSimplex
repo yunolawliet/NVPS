@@ -54,68 +54,38 @@ chmod +x /usr/lib/openvpn/*
 
 # Server settings
 cat >> /etc/openvpn/server.conf <<-END
-# Port Number.
 port $PORT
-
-# TCP or UDP server.
 proto tcp
-
-# Interface type, TUN or TAP.
 dev tun
-
-# Certificates.
 ca ca.crt
 cert server.crt
-key server.key  # This file should be kept secret
-
-# Diffie hellman parameters.
+key server.key
 dh dh2048.pem
-
-# Subnet to use for OpenVPN Connections.
-server 10.8.0.0 255.255.255.0
-
-# Keepalive: send ping every 10 seconds, tunnel down after 120 seconds no response.
-keepalive 5 30
-
-# LZO Compression for the tunnel.
-comp-lzo
-
-# Drop privileges to user/group nobody.
-user nobody
-group nogroup
-
-# Makes the link more resistant to connection failures.
-persist-key
-persist-tun
-
-# Username and Password authentication.
-client-cert-not-required
-
-# OpenVPN Status Log files.
-status openvpn-status.log
-
-# LOG FILE VERBOSITY:
-# 0 is silent, except for fatal errors
-# 4 is reasonable for general usage
-# 5 and 6 can help to debug connection problems
-# 9 is extremely verbose
-verb 3
-
-# Custom
-duplicate-cn
-cipher none
-auth none
-client-cert-not-required
+verify-client-cert none
 username-as-common-name
-max-clients 5000
 plugin /usr/lib/openvpn/plugins/openvpn-plugin-auth-pam.so login
-# IP Assigning
+server 192.168.10.0 255.255.255.0
 ifconfig-pool-persist ipp.txt
-# Clients are to use this server as a network gateway.
 push "redirect-gateway def1 bypass-dhcp"
-# Push these DNS addresses to clients.
 push "dhcp-option DNS $DNS1"
 push "dhcp-option DNS $DNS2"
+push "route-method exe"
+push "route-delay 2"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+keepalive 10 120
+comp-lzo
+user nobody
+group nogroup
+persist-key
+persist-tun
+status openvpn-status.log
+verb 3
+ncp-disable
+cipher none
+auth none
+#clients
+max-clients 5000
 # Speed-up
 mssfix 1400
 reneg-sec 0
@@ -125,14 +95,6 @@ push "sndbuf 393216"
 push "rcvbuf 393216"
 tun-mtu 1400 
 mssfix 1360
-# Windows routing issues
-push "route-method exe"
-push "route-delay 2"
-client-to-client
-# Additional Scripts
-persist-remote-ip
-script-security 2
-#client-connect /etc/openvpn/up.sh
 # Logging
 status status.log
 log openvpn.log
