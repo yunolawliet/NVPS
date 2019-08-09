@@ -170,7 +170,7 @@ script-security 2
 cipher none
 auth none
 http-proxy $MYIP 8080
-ttp-proxy-option CUSTOM-HEADER ""
+http-proxy-option CUSTOM-HEADER ""
 http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.0"
 http-proxy-option CUSTOM-HEADER Proxy-Connection: keep-alive
 END
