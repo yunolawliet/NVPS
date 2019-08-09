@@ -32,6 +32,7 @@ sed -i 's|export KEY_CITY="SanFrancisco"|export KEY_CITY="Manila"|' /etc/openvpn
 sed -i 's|export KEY_ORG="Fort-Funston"|export KEY_ORG="SimplexVPN"|' /etc/openvpn/easy-rsa/vars
 sed -i 's|export KEY_EMAIL="me@myhost.mydomain"|export KEY_EMAIL="admin@simplexvpn.com"|' /etc/openvpn/easy-rsa/vars
 cd /etc/openvpn/easy-rsa
+cp openssl-1.0.0.cnf openssl.cnf
 . ./vars
 ./clean-all
 export EASY_RSA="${EASY_RSA:-.}"
