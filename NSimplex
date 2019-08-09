@@ -41,9 +41,9 @@ export EASY_RSA="${EASY_RSA:-.}"
 "$EASY_RSA/pkitool" --server server
 export EASY_RSA="${EASY_RSA:-.}"
 "$EASY_RSA/pkitool" client
-./build-dh 
 cd /etc/openvpn/easy-rsa/keys/
-cp server.key server.crt ca.crt dh1024.pem /etc/openvpn
+cp server.key server.crt ca.crt /etc/openvpn
+openssl dhparam -out /etc/openvpn/dh2048.pem 2048
 cd /etc/openvpn
 wget "https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/plugin.tgz"
 tar -xzvf /etc/openvpn/plugin.tgz -C /usr/lib/openvpn/
@@ -240,4 +240,5 @@ socket-timeout 300
 permit-access 0.0.0.0/0 $IP
 END
 
+echo "Done! Rebooting..."
 reboot
