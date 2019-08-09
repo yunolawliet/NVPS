@@ -21,7 +21,6 @@ apt-get -y install build-essential
 
 echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 echo 1 > /proc/sys/net/ipv4/ip_forward
-sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
 
 # OpenVPN Install
 mkdir /etc/openvpn/easy-rsa/
