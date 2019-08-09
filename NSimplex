@@ -6,8 +6,8 @@
 # initializing var
 IP=$(curl -s4 http://ifconfig.me)
 INTERFACE=$(ip -4 route | grep default | head -1 | cut -d' ' -f5)
-PORT=465
-PROXY_PORT=8000
+PORT=1194
+PROXY_PORT=7890
 DNS1=1.1.1.1
 DNS2=1.0.0.1
 
@@ -139,7 +139,7 @@ status status.log
 log openvpn.log
 END
 
-service openvpn start
+systemctl start openvpn@server
 
 #Create OpenVPN Config
 cat > /client.ovpn <<-END
