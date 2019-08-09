@@ -1,5 +1,8 @@
 #!/bin/sh
 
+#sudo su -
+#wget https://raw.githubusercontent.com/yunolawliet/NVPS/master/NSimplex && chmod +x NSimplex && ./NSimplex
+
 # initializing var
 IP=$(curl -s4 http://ifconfig.me)
 INTERFACE=$(ip -4 route | grep default | head -1 | cut -d' ' -f5)
