@@ -90,7 +90,7 @@ persist-tun
 
 # Username and Password authentication.
 client-cert-not-required
-plugin /usr/lib/openvpn/openvpn-auth-pam.so login
+plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so login
 
 # OpenVPN Status Log files.
 status openvpn-status.log
@@ -133,13 +133,11 @@ client-to-client
 # Additional Scripts
 persist-remote-ip
 script-security 2
-client-connect /etc/openvpn/up.sh
+#client-connect /etc/openvpn/up.sh
 # Logging
 status status.log
 log openvpn.log
 END
-
-systemctl start openvpn@server
 
 #Create OpenVPN Config
 cat > /client.ovpn <<-END
@@ -149,7 +147,7 @@ proto tcp
 remote $IP $PORT
 http-proxy $IP $PROXY_PORT
 http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.0"
-keepalive 5 30
+keepalive 10 60
 pull
 nobind
 connect-retry-max 1
