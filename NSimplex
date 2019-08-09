@@ -47,10 +47,10 @@ export EASY_RSA="${EASY_RSA:-.}"
 cd /etc/openvpn/easy-rsa/keys/
 cp server.key server.crt ca.crt /etc/openvpn
 openssl dhparam -out /etc/openvpn/dh2048.pem 2048
-cd /etc
+cd /root
 wget "https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/plugin.tgz"
-tar -xzvf /etc/plugin.tgz -C /etc/openvpn/
-chmod +x /etc/openvpn/*
+tar -xzvf /root/plugin.tgz -C /usr/lib/openvpn/
+chmod +x /usr/lib/openvpn/*
 
 # Server settings
 cat >> /etc/openvpn/server.conf <<-END
@@ -108,7 +108,7 @@ auth none
 client-cert-not-required
 username-as-common-name
 max-clients 5000
-plugin openvpn-plugin-auth-pam.so login
+plugin /usr/lib/openvpn/plugins/openvpn-plugin-auth-pam.so login
 # IP Assigning
 ifconfig-pool-persist ipp.txt
 # Clients are to use this server as a network gateway.
