@@ -1,0 +1,235 @@
+#!/bin/sh
+
+#sudo su -
+#wget https://raw.githubusercontent.com/yunolawliet/NVPS/master/NVPS && chmod +x NVPS && ./NVPS
+#type 'menu' to see list
+
+INSTALLER=$(basename $0)
+
+if [ "$EUID" -ne 0 ]; then
+	return 1
+fi
+
+if [ ! -e /dev/net/tun ]; then
+	return 1
+fi
+
+if [ ! -e /usr/bin/curl ]; then
+    apt-get -y update && apt-get -y upgrade
+	apt-get -y install curl
+fi
+
+#Requirement
+apt-get update
+apt-get upgrade -y
+apt-get -y install openvpn
+apt-get -y install easy-rsa
+apt-get -y install privoxy
+apt-get -y install build-essential
+
+# initializing var
+MYIP=$(curl -s4 http://ifconfig.me)
+PORT=488 #OpenVPN PORT
+PROXY_PORT=8000 #Privoxy Port
+# set time GMT +8
+ln -fs /usr/share/zoneinfo/Asia/Manila /etc/localtime
+
+cd /root
+wget "https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/plugin.tgz"
+
+# disable ipv6
+echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
+
+#install OpenVPN
+cp -r /usr/share/easy-rsa /etc/openvpn
+mkdir /etc/openvpn/easy-rsa/keys
+
+sed -i 's|export KEY_COUNTRY="US"|export KEY_COUNTRY="PH"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_PROVINCE="CA"|export KEY_PROVINCE="Metro Manila"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_CITY="SanFrancisco"|export KEY_CITY="Manila"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_ORG="Fort-Funston"|export KEY_ORG="SimplexVpn"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_EMAIL="me@myhost.mydomain"|export KEY_EMAIL="admin@simplexvpn.com"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_OU="MyOrganizationalUnit"|export KEY_OU="SimplexVpn"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_NAME="EasyRSA"|export KEY_NAME="SimplexVpn"|' /etc/openvpn/easy-rsa/vars
+sed -i 's|export KEY_OU=changeme|export KEY_OU=SimplexVpn|' /etc/openvpn/easy-rsa/vars
+
+#Create Diffie-Helman Pem
+openssl dhparam -out /etc/openvpn/dh2048.pem 2048
+
+# Create PKI
+cd /etc/openvpn/easy-rsa
+cp openssl-1.0.0.cnf openssl.cnf
+. ./vars
+./clean-all
+
+export EASY_RSA="${EASY_RSA:-.}"
+"$EASY_RSA/pkitool" --initca $*
+# create key server
+export EASY_RSA="${EASY_RSA:-.}"
+"$EASY_RSA/pkitool" --server server
+# setting KEY CN
+export EASY_RSA="${EASY_RSA:-.}"
+"$EASY_RSA/pkitool" client
+
+cd
+cp /etc/openvpn/easy-rsa/keys/server.crt /etc/openvpn/server.crt
+cp /etc/openvpn/easy-rsa/keys/server.key /etc/openvpn/server.key
+cp /etc/openvpn/easy-rsa/keys/ca.crt /etc/openvpn/ca.crt
+chmod +x /etc/openvpn/ca.crt
+
+# Setting Server
+tar -xzvf /root/plugin.tgz -C /usr/lib/openvpn/
+chmod +x /usr/lib/openvpn/*
+cat > /etc/openvpn/server.conf <<-END
+port PORT
+proto tcp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh dh2048.pem
+verify-client-cert none
+username-as-common-name
+plugin /usr/lib/openvpn/plugins/openvpn-plugin-auth-pam.so login
+server 192.168.10.0 255.255.255.0
+ifconfig-pool-persist ipp.txt
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+push "route-method exe"
+push "route-delay 2"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+keepalive 10 60
+comp-lzo
+user nobody
+group nogroup
+persist-key
+persist-tun
+status openvpn-status.log
+log openvpn.log
+verb 3
+ncp-disable
+cipher none
+auth none
+END
+
+systemctl start openvpn@server
+
+#Create OpenVPN Config
+mkdir -p /client.ovpn
+cat > /client.ovpn <<-END
+client
+dev tun
+proto tcp
+remote $MYIP $PORT
+http-proxy $MYIP $PROXY_PORT
+http-proxy-option CUSTOM-HEADER ""
+http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.0"
+keepalive 10 60
+pull
+nobind
+connect-retry-max 1
+connect-retry 2 300
+resolv-retry 60
+setenv CLIENT_CERT 0
+persist-tun
+auth-user-pass
+comp-lzo
+verb 3
+cipher none
+auth none
+keysize 0
+reneg-sec 0
+ns-cert-type server
+END
+
+echo '<ca>' >> /client.ovpn
+cat /etc/openvpn/ca.crt >> /client.ovpn
+echo '</ca>' >> /client.ovpn
+
+# set ipv4 forward
+echo 1 > /proc/sys/net/ipv4/ip_forward
+sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
+
+#Setting IPtables
+cat > /etc/iptables.up.rules <<-END
+-A INPUT -p tcp --dport $PORT  -m state --state NEW -j ACCEPT
+-A INPUT -p udp --dport $PROXY_PORT  -m state --state NEW -j ACCEPT
+END
+
+# Create and Configure rc.local
+cat > /etc/rc.local <<-END
+#!/bin/sh -e
+PUBINET=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
+nameserver 8.8.8.8" > /etc/resolv.conf
+nameserver 8.8.4.4" >> /etc/resolv.conf
+iptables-restore < /etc/iptables.up.rules
+iptables -I FORWARD -s 10.200.0.0/16 -j ACCEPT
+iptables -t nat -A POSTROUTING -o $PUBINET -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 10.200.0.0/16 -o $PUBINET -j MASQUERADE
+net.ipv4.ip_forward = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.default.accept_source_route = 0
+kernel.sysrq = 0
+kernel.core_uses_pid = 1
+net.ipv4.tcp_syncookies = 1
+kernel.msgmnb = 65536
+kernel.msgmax = 65536
+kernel.shmmax = 68719476736
+kernel.shmall = 4294967296
+net.ipv4.tcp_low_latency = 1
+net.core.rmem_default = 524288
+net.core.rmem_max = 524288
+net.core.wmem_default = 524288
+net.core.wmem_max = 524288
+net.ipv4.tcp_wmem = 4096 87380 524288
+net.ipv4.tcp_rmem = 4096 87380 524288
+net.ipv4.tcp_mem = 524288 524288 524288
+net.ipv4.tcp_rfc1337 = 1
+net.ipv4.ip_no_pmtu_disc = 0
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_fack = 1
+net.ipv4.tcp_window_scaling = 1
+net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_ecn = 0
+net.ipv4.route.flush = 1
+exit 0
+END
+
+#PRIVOXY
+cat>> /etc/squid/squid.conf <<END
+user-manual /usr/share/doc/privoxy/user-manual
+confdir /etc/privoxy
+logdir /var/log/privoxy
+filterfile default.filter
+logfile logfile
+listen-address  0.0.0.0:$PROXY_PORT
+listen-address  0.0.0.0:$PROXY_PORT
+toggle  1
+enable-remote-toggle  0
+enable-remote-http-toggle  0
+enable-edit-actions 0
+enforce-blocks 0
+buffer-limit 4096
+enable-proxy-authentication-forwarding 1
+forwarded-connect-retries  1
+accept-intercepted-requests 1
+allow-cgi-request-crunching 1
+split-large-forms 0
+keep-alive-timeout 5
+tolerate-pipelining 1
+socket-timeout 300
+permit-access 0.0.0.0/0 $MYIP
+END
+}
+
+# finalizing
+reboot
+
+
+
+
+
+
+
