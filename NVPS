@@ -18,6 +18,7 @@ fi
 #Requirement
 apt-get update
 apt-get upgrade -y
+apt-get -y install firewalld
 apt-get -y install openvpn
 apt-get -y install easy-rsa
 apt-get -y install privoxy
@@ -25,6 +26,7 @@ apt-get -y install build-essential
 
 # initializing var
 MYIP=$(curl -s4 http://ifconfig.me)
+EXTERNAL_INT=$(ip -4 route | grep default | head -1 | cut -d' ' -f5)
 PORT=488 #OpenVPN PORT
 PROXY_PORT=7890 #Privoxy Port
 DNS1=1.1.1.1
@@ -194,14 +196,18 @@ net.ipv4.route.flush = 1
 exit 0
 END
 
+
+[[ -f /etc/privoxy/config ]] && {
+	mv ${PRIVOXY_CONFIG}{,.orig}; 
+}
+
 #PRIVOXY
-cat>> /etc/privoxy/config <<END
+cat >> /etc/privoxy/config <<-END
 user-manual /usr/share/doc/privoxy/user-manual
 confdir /etc/privoxy
 logdir /var/log/privoxy
 filterfile default.filter
 logfile logfile
-listen-address  0.0.0.0:$PROXY_PORT
 listen-address  0.0.0.0:$PROXY_PORT
 toggle  1
 enable-remote-toggle  0
@@ -219,6 +225,12 @@ tolerate-pipelining 1
 socket-timeout 300
 permit-access 0.0.0.0/0 $MYIP
 END
+
+#FIREWALL
+ZONE=$(firewall-cmd --get-zone-of-interface=$EXTERNAL_INT)
+firewall-cmd --quiet --permanent --zone=${ZONE} --remove-service=dhcpv6-client
+firewall-cmd --quiet --permanent --zone=${ZONE} --add-service=privoxy
+firewall-cmd --quiet --reload
 
 # finalizing
 reboot
