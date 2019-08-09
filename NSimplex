@@ -11,18 +11,26 @@ PROXY_PORT=7890
 DNS1=1.1.1.1
 DNS2=1.0.0.1
 
-# RequirementS
+# GMT +8
+ln -fs /usr/share/zoneinfo/Asia/Manila /etc/localtime
+
+# Use Old OpenVPN
+wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg|apt-key add -
+sleep 2
+echo "deb http://build.openvpn.net/debian/openvpn/release/2.4 stretch main" > /etc/apt/sources.list.d/openvpn-aptrepo.list
+
+# Requirements
 apt-get update
-apt-get -y upgrade 
-apt-get -y install openvpn
-apt-get -y install easy-rsa
-apt-get -y install privoxy
-apt-get -y install build-essential
+apt-get -y -qq upgrade 
+apt-get -y -qq install openvpn
+apt-get -y -qq install easy-rsa
+apt-get -y -qq install privoxy
+apt-get -y -qq install build-essential
 
 echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
-# OpenVPN Install
+# OpenVPN
 mkdir /etc/openvpn/easy-rsa/
 cp -r /usr/share/easy-rsa/* /etc/openvpn/easy-rsa/
 sed -i 's|export KEY_COUNTRY="US"|export KEY_COUNTRY="PH"|' /etc/openvpn/easy-rsa/vars
