@@ -153,8 +153,50 @@ sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
 
 #Setting IPtables
 cat > /etc/iptables.up.rules <<-END
+*nat
+:PREROUTING ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+-A POSTROUTING -j SNAT --to-source xxxxxxxxx
+-A POSTROUTING -o eth0 -j MASQUERADE
+-A POSTROUTING -s 192.168.10.0/24 -o eth0 -j MASQUERADE
+COMMIT
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:fail2ban-ssh - [0:0]
+-A INPUT -p tcp -m multiport --dports 22 -j fail2ban-ssh
+-A INPUT -p ICMP --icmp-type 8 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A INPUT -p tcp --dport 22  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 80  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 143  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 442  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 443  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 587  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 1147  -m state --state NEW -j ACCEPT
+-A INPUT -p udp --dport 1147  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 3128  -m state --state NEW -j ACCEPT
+-A INPUT -p udp --dport 3128  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 8080  -m state --state NEW -j ACCEPT
+-A INPUT -p udp --dport 8080  -m state --state NEW -j ACCEPT 
+-A INPUT -p tcp --dport 10000  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport $PORT  -m state --state NEW -j ACCEPT
 -A INPUT -p udp --dport $PROXY_PORT  -m state --state NEW -j ACCEPT
+-A fail2ban-ssh -j RETURN
+COMMIT
+*raw
+:PREROUTING ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+COMMIT
+*mangle
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+COMMIT
 END
 
 # Create and Configure rc.local
@@ -230,6 +272,7 @@ END
 ZONE=$(firewall-cmd --get-zone-of-interface=$EXTERNAL_INT)
 firewall-cmd --quiet --permanent --zone=${ZONE} --remove-service=dhcpv6-client
 firewall-cmd --quiet --permanent --zone=${ZONE} --add-service=privoxy
+firewall-cmd --quiet --permanent --zone=${ZONE} --add-service=openvpn
 firewall-cmd --quiet --reload
 
 # finalizing
