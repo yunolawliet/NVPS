@@ -47,10 +47,10 @@ export EASY_RSA="${EASY_RSA:-.}"
 cd /etc/openvpn/easy-rsa/keys/
 cp server.key server.crt ca.crt /etc/openvpn
 openssl dhparam -out /etc/openvpn/dh2048.pem 2048
-cd /etc/openvpn
+cd /etc
 wget "https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/plugin.tgz"
-tar -xzvf /etc/openvpn/plugin.tgz -C /usr/lib/openvpn/
-chmod +x /usr/lib/openvpn/*
+tar -xzvf /etc/plugin.tgz -C /etc/openvpn/
+chmod +x /etc/openvpn/*
 
 # Server settings
 cat >> /etc/openvpn/server.conf <<-END
@@ -69,7 +69,7 @@ cert server.crt
 key server.key  # This file should be kept secret
 
 # Diffie hellman parameters.
-dh dh1024.pem
+dh dh2048.pem
 
 # Subnet to use for OpenVPN Connections.
 server 10.8.0.0 255.255.255.0
@@ -90,7 +90,6 @@ persist-tun
 
 # Username and Password authentication.
 client-cert-not-required
-plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so login
 
 # OpenVPN Status Log files.
 status openvpn-status.log
@@ -109,7 +108,7 @@ auth none
 client-cert-not-required
 username-as-common-name
 max-clients 5000
-plugin /usr/lib/openvpn/plugins/openvpn-plugin-auth-pam.so login
+plugin openvpn-plugin-auth-pam.so login
 # IP Assigning
 ifconfig-pool-persist ipp.txt
 # Clients are to use this server as a network gateway.
