@@ -6,11 +6,6 @@
 
 INSTALLER=$(basename $0)
 
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 
-   exit 1
-fi
-
 if [ ! -e /dev/net/tun ]; then
 	return 1
 fi
@@ -31,9 +26,9 @@ apt-get -y install build-essential
 # initializing var
 MYIP=$(curl -s4 http://ifconfig.me)
 PORT=488 #OpenVPN PORT
-PROXY_PORT=8000 #Privoxy Port
-DNS1 = '1.1.1.1'
-DNS2 = '1.0.0.1'
+PROXY_PORT=7890 #Privoxy Port
+DNS1=1.1.1.1
+DNS2=1.0.0.1
 
 # set time GMT +8
 ln -fs /usr/share/zoneinfo/Asia/Manila /etc/localtime
@@ -224,7 +219,6 @@ tolerate-pipelining 1
 socket-timeout 300
 permit-access 0.0.0.0/0 $MYIP
 END
-}
 
 # finalizing
 reboot
