@@ -172,6 +172,7 @@ cat /etc/openvpn/ca.crt >> /client.ovpn
 echo '</ca>' >> /client.ovpn
 
 # Create custom configs
+mkdir /etc/simplex/
 cat > /etc/simplex/sysctl.conf <<-END
 net.ipv4.ip_forward = 1
 net.ipv4.conf.default.rp_filter = 1
@@ -222,7 +223,11 @@ cp /etc/simplex/sysctl.conf /etc/sysctl.conf
 sysctl --system &> /dev/null
 sysctl -p &> /dev/null
 bash /etc/simplex/iptables.sh
+nameserver $DNS1 > /etc/resolv.conf
+nameserver $DNS2 > /etc/resolv.conf
 END
+
+chmod +x /etc/rc.local
 
 #PRIVOXY
 cat >> /etc/privoxy/config <<-END
