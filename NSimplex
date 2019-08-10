@@ -6,11 +6,11 @@
 # initializing var
 IP=$(curl -s4 http://ifconfig.me)
 INTERFACE=$(ip -4 route | grep default | head -1 | cut -d' ' -f5)
-PORT=1337
-PROXY_PORT=1338
+PORT=495
+PROXY_PORT=9201
 DNS1=1.1.1.1
 DNS2=1.0.0.1
-PAYLOAD="POST https://e9413.g.akamaiedge.net HTTP/1.0"
+PAYLOAD='"POST https://e9413.g.akamaiedge.net HTTP/1.0"'
 
 # GMT +8
 ln -fs /usr/share/zoneinfo/Asia/Manila /etc/localtime
@@ -37,16 +37,10 @@ iptables -F && iptables -X
 # ipv4 iptables
 cat >> /etc/iptables/rules.v4 << END
 *filter
-# Custom
--I FORWARD -s 10.8.0.0/24 -j ACCEPT
--t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
--I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
--A FORWARD -i tun+ -j ACCEPT
-
 # Allow all loopback (lo) traffic and reject anything
 # to localhost that does not originate from lo.
 -A INPUT -i lo -j ACCEPT
--A INPUT ! -i lo -s 127.0.0.0/8 -j REJECT
+-A INPUT ! -i lo -s 10.8.0.0/24 -j REJECT
 -A OUTPUT -o lo -j ACCEPT
 
 # Allow ping and ICMP error returns.
@@ -88,111 +82,10 @@ cat >> /etc/iptables/rules.v4 << END
 -A FORWARD -j REJECT
 -A OUTPUT -j REJECT
 
-
-# ANTI-TORRENT ############################
--N LOGDROP > /dev/null 2> /dev/null
--F LOGDROP
--A LOGDROP -j DROP
-
-#Torrent
--D FORWARD -m string --algo bm --string "BitTorrent" -j LOGDROP 
--D FORWARD -m string --algo bm --string "BitTorrent protocol" -j LOGDROP
--D FORWARD -m string --algo bm --string "peer_id=" -j LOGDROP
--D FORWARD -m string --algo bm --string ".torrent" -j LOGDROP
--D FORWARD -m string --algo bm --string "announce.php?passkey=" -j LOGDROP 
--D FORWARD -m string --algo bm --string "torrent" -j LOGDROP
--D FORWARD -m string --algo bm --string "announce" -j LOGDROP
--D FORWARD -m string --algo bm --string "info_hash" -j LOGDROP
-
-# DHT keyword
--A FORWARD -m string --string "get_peers" --algo bm -j DROP
--A FORWARD -m string --string "announce_peer" --algo bm -j LOGDROP
--A FORWARD -m string --string "find_node" --algo bm -j LOGDROP
-
-## Modified debia commands
-
--A FORWARD -p udp -m string --algo bm --string "BitTorrent" -j DROP
--A FORWARD -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--A FORWARD -p udp -m string --algo bm --string "peer_id=" -j DROP
--A FORWARD -p udp -m string --algo bm --string ".torrent" -j DROP
--A FORWARD -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--A FORWARD -p udp -m string --algo bm --string "torrent" -j DROP
--A FORWARD -p udp -m string --algo bm --string "announce" -j DROP
--A FORWARD -p udp -m string --algo bm --string "info_hash" -j DROP
--A FORWARD -p udp -m string --algo bm --string "tracker" -j DROP
-
--A INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
--A INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--A INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
--A INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
--A INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--A INPUT -p udp -m string --algo bm --string "torrent" -j DROP
--A INPUT -p udp -m string --algo bm --string "announce" -j DROP
--A INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
--A INPUT -p udp -m string --algo bm --string "tracker" -j DROP
-
--I INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
--I INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--I INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
--I INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
--I INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--I INPUT -p udp -m string --algo bm --string "torrent" -j DROP
--I INPUT -p udp -m string --algo bm --string "announce" -j DROP
--I INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
--I INPUT -p udp -m string --algo bm --string "tracker" -j DROP
-
--D INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
--D INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--D INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
--D INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
--D INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--D INPUT -p udp -m string --algo bm --string "torrent" -j DROP
--D INPUT -p udp -m string --algo bm --string "announce" -j DROP
--D INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
--D INPUT -p udp -m string --algo bm --string "tracker" -j DROP
-
--I OUTPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
--I OUTPUT -p udp -m string --algo bm --string ".torrent" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--I OUTPUT -p udp -m string --algo bm --string "torrent" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "announce" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "info_hash" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "tracker" -j DROP
-
-## Delete
-
--D INPUT -m string --algo bm --string "BitTorrent" -j DROP
--D INPUT -m string --algo bm --string "BitTorrent protocol" -j DROP
--D INPUT -m string --algo bm --string "peer_id=" -j DROP
--D INPUT -m string --algo bm --string ".torrent" -j DROP
--D INPUT -m string --algo bm --string "announce.php?passkey=" -j DROP 
--D INPUT -m string --algo bm --string "torrent" -j DROP
--D INPUT -m string --algo bm --string "announce" -j DROP
--D INPUT -m string --algo bm --string "info_hash" -j DROP
--D INPUT -m string --algo bm --string "tracker" -j DROP
-
--D OUTPUT -m string --algo bm --string "BitTorrent" -j DROP
--D OUTPUT -m string --algo bm --string "BitTorrent protocol" -j DROP
--D OUTPUT -m string --algo bm --string "peer_id=" -j DROP
--D OUTPUT -m string --algo bm --string ".torrent" -j DROP
--D OUTPUT -m string --algo bm --string "announce.php?passkey=" -j DROP 
--D OUTPUT -m string --algo bm --string "torrent" -j DROP
--D OUTPUT -m string --algo bm --string "announce" -j DROP
--D OUTPUT -m string --algo bm --string "info_hash" -j DROP
--D OUTPUT -m string --algo bm --string "tracker" -j DROP
-
--D FORWARD -m string --algo bm --string "BitTorrent" -j DROP
--D FORWARD -m string --algo bm --string "BitTorrent protocol" -j DROP
--D FORWARD -m string --algo bm --string "peer_id=" -j DROP
--D FORWARD -m string --algo bm --string ".torrent" -j DROP
--D FORWARD -m string --algo bm --string "announce.php?passkey=" -j DROP 
--D FORWARD -m string --algo bm --string "torrent" -j DROP
--D FORWARD -m string --algo bm --string "announce" -j DROP
--D FORWARD -m string --algo bm --string "info_hash" -j DROP
--D FORWARD -m string --algo bm --string "tracker" -j DROP 
-
+# Custom
+-I FORWARD -s 10.8.0.0/24 -j ACCEPT
+-t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
+-I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 COMMIT
 END
