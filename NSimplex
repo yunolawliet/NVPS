@@ -87,6 +87,113 @@ cat >> /etc/iptables/rules.v4 << END
 -t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
 -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 
+
+
+# ANTI-TORRENT ############################
+-N LOGDROP > /dev/null 2> /dev/null
+-F LOGDROP
+-A LOGDROP -j DROP
+
+#Torrent
+-D FORWARD -m string --algo bm --string "BitTorrent" -j LOGDROP 
+-D FORWARD -m string --algo bm --string "BitTorrent protocol" -j LOGDROP
+-D FORWARD -m string --algo bm --string "peer_id=" -j LOGDROP
+-D FORWARD -m string --algo bm --string ".torrent" -j LOGDROP
+-D FORWARD -m string --algo bm --string "announce.php?passkey=" -j LOGDROP 
+-D FORWARD -m string --algo bm --string "torrent" -j LOGDROP
+-D FORWARD -m string --algo bm --string "announce" -j LOGDROP
+-D FORWARD -m string --algo bm --string "info_hash" -j LOGDROP
+
+# DHT keyword
+-A FORWARD -m string --string "get_peers" --algo bm -j DROP
+-A FORWARD -m string --string "announce_peer" --algo bm -j LOGDROP
+-A FORWARD -m string --string "find_node" --algo bm -j LOGDROP
+
+## Modified debia commands
+
+-A FORWARD -p udp -m string --algo bm --string "BitTorrent" -j DROP
+-A FORWARD -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
+-A FORWARD -p udp -m string --algo bm --string "peer_id=" -j DROP
+-A FORWARD -p udp -m string --algo bm --string ".torrent" -j DROP
+-A FORWARD -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
+-A FORWARD -p udp -m string --algo bm --string "torrent" -j DROP
+-A FORWARD -p udp -m string --algo bm --string "announce" -j DROP
+-A FORWARD -p udp -m string --algo bm --string "info_hash" -j DROP
+-A FORWARD -p udp -m string --algo bm --string "tracker" -j DROP
+
+-A INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
+-A INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
+-A INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
+-A INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
+-A INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
+-A INPUT -p udp -m string --algo bm --string "torrent" -j DROP
+-A INPUT -p udp -m string --algo bm --string "announce" -j DROP
+-A INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
+-A INPUT -p udp -m string --algo bm --string "tracker" -j DROP
+
+-I INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
+-I INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
+-I INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
+-I INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
+-I INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
+-I INPUT -p udp -m string --algo bm --string "torrent" -j DROP
+-I INPUT -p udp -m string --algo bm --string "announce" -j DROP
+-I INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
+-I INPUT -p udp -m string --algo bm --string "tracker" -j DROP
+
+-D INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
+-D INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
+-D INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
+-D INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
+-D INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
+-D INPUT -p udp -m string --algo bm --string "torrent" -j DROP
+-D INPUT -p udp -m string --algo bm --string "announce" -j DROP
+-D INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
+-D INPUT -p udp -m string --algo bm --string "tracker" -j DROP
+
+-I OUTPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
+-I OUTPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
+-I OUTPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
+-I OUTPUT -p udp -m string --algo bm --string ".torrent" -j DROP
+-I OUTPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
+-I OUTPUT -p udp -m string --algo bm --string "torrent" -j DROP
+-I OUTPUT -p udp -m string --algo bm --string "announce" -j DROP
+-I OUTPUT -p udp -m string --algo bm --string "info_hash" -j DROP
+-I OUTPUT -p udp -m string --algo bm --string "tracker" -j DROP
+
+## Delete
+
+-D INPUT -m string --algo bm --string "BitTorrent" -j DROP
+-D INPUT -m string --algo bm --string "BitTorrent protocol" -j DROP
+-D INPUT -m string --algo bm --string "peer_id=" -j DROP
+-D INPUT -m string --algo bm --string ".torrent" -j DROP
+-D INPUT -m string --algo bm --string "announce.php?passkey=" -j DROP 
+-D INPUT -m string --algo bm --string "torrent" -j DROP
+-D INPUT -m string --algo bm --string "announce" -j DROP
+-D INPUT -m string --algo bm --string "info_hash" -j DROP
+-D INPUT -m string --algo bm --string "tracker" -j DROP
+
+-D OUTPUT -m string --algo bm --string "BitTorrent" -j DROP
+-D OUTPUT -m string --algo bm --string "BitTorrent protocol" -j DROP
+-D OUTPUT -m string --algo bm --string "peer_id=" -j DROP
+-D OUTPUT -m string --algo bm --string ".torrent" -j DROP
+-D OUTPUT -m string --algo bm --string "announce.php?passkey=" -j DROP 
+-D OUTPUT -m string --algo bm --string "torrent" -j DROP
+-D OUTPUT -m string --algo bm --string "announce" -j DROP
+-D OUTPUT -m string --algo bm --string "info_hash" -j DROP
+-D OUTPUT -m string --algo bm --string "tracker" -j DROP
+
+-D FORWARD -m string --algo bm --string "BitTorrent" -j DROP
+-D FORWARD -m string --algo bm --string "BitTorrent protocol" -j DROP
+-D FORWARD -m string --algo bm --string "peer_id=" -j DROP
+-D FORWARD -m string --algo bm --string ".torrent" -j DROP
+-D FORWARD -m string --algo bm --string "announce.php?passkey=" -j DROP 
+-D FORWARD -m string --algo bm --string "torrent" -j DROP
+-D FORWARD -m string --algo bm --string "announce" -j DROP
+-D FORWARD -m string --algo bm --string "info_hash" -j DROP
+-D FORWARD -m string --algo bm --string "tracker" -j DROP 
+
+
 COMMIT
 END
 
@@ -98,12 +205,6 @@ cat >> /etc/iptables/rules.v6 << END
 -A FORWARD -j REJECT
 -A OUTPUT -j REJECT
 COMMIT
-END
-cat >> /etc/sysctl.d/99-sysctl.conf << END
-net.ipv6.conf.all.disable_ipv6 = 1
-net.ipv6.conf.default.disable_ipv6 = 1
-net.ipv6.conf.lo.disable_ipv6 = 1
-net.ipv6.conf.eth0.disable_ipv6 = 1
 END
 
 # Refresh with the new configuration
