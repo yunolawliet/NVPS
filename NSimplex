@@ -40,8 +40,10 @@ cat >> /etc/iptables/rules.v4 << END
 # Allow all loopback (lo) traffic and reject anything
 # to localhost that does not originate from lo.
 -A INPUT -i lo -j ACCEPT
--A INPUT ! -i lo -s 10.8.0.0/24 -j REJECT
 -A OUTPUT -o lo -j ACCEPT
+-I FORWARD -s 10.8.0.0/24 -j ACCEPT
+-t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
+-I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Allow ping and ICMP error returns.
 -A INPUT -p icmp -m state --state NEW --icmp-type 8 -j ACCEPT
@@ -81,12 +83,6 @@ cat >> /etc/iptables/rules.v4 << END
 -A INPUT -j REJECT
 -A FORWARD -j REJECT
 -A OUTPUT -j REJECT
-
-# Custom
--I FORWARD -s 10.8.0.0/24 -j ACCEPT
--t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
--I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
-
 
 
 # ANTI-TORRENT ############################
@@ -192,20 +188,11 @@ cat >> /etc/iptables/rules.v4 << END
 -D FORWARD -m string --algo bm --string "announce" -j DROP
 -D FORWARD -m string --algo bm --string "info_hash" -j DROP
 -D FORWARD -m string --algo bm --string "tracker" -j DROP 
-
-
 COMMIT
 END
 
 # Disable ipv6
 echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
-cat >> /etc/iptables/rules.v6 << END
-*filter
--A INPUT -j REJECT
--A FORWARD -j REJECT
--A OUTPUT -j REJECT
-COMMIT
-END
 
 # Refresh with the new configuration
 sysctl -p
