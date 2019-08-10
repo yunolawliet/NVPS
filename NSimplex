@@ -28,6 +28,7 @@ apt-get -y install easy-rsa
 apt-get -y install privoxy
 apt-get -y install ufw
 apt-get -y install fail2ban
+apt-get -y install unzip
 apt-get -y install build-essential
 
 # OpenVPN
@@ -86,7 +87,6 @@ user nobody
 group nogroup
 persist-key
 persist-tun
-status openvpn-status.log
 verb 3
 ncp-disable
 cipher none
@@ -103,8 +103,8 @@ push "rcvbuf 393216"
 tun-mtu 1400 
 mssfix 1360
 # Logging
-status status.log
-log openvpn.log
+status /var/log/openvpn-status.log
+log /var/log/openvpn.log
 END
 
 #Create OpenVPN Config
@@ -176,6 +176,19 @@ iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -A INPUT -p tcp --dport $PORT  -m state --state NEW -j ACCEPT
 iptables -A INPUT -p tcp --dport $PROXY_PORT  -m state --state NEW -j ACCEPT
 
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+iptables -A INPUT -j DROP
+
+iptables -N fail2ban-ssh
+iptables -A INPUT -p tcp -m multiport --dports 22 -j fail2ban-ssh
+
+# Anti-Torrent
 iptables -A FORWARD -s 10.8.0.0/24 -p tcp --dport 443 -j DROP
 iptables -A FORWARD -i tun+ -j ACCEPT
 iptables -A INPUT -m string --string "BitTorrent" --algo bm -j DROP
@@ -188,6 +201,8 @@ iptables -A INPUT -m string --string "announce.php?passkey=" --algo bm -j DROP
 iptables -A INPUT -m string --string "get_peers" --algo bm -j DROP
 iptables -A INPUT -m string --string "announce_peer" --algo bm -j DROP
 iptables -A INPUT -m string --string "find_node" --algo bm -j DROP
+
+iptables -A fail2ban-ssh -j RETURN
 END
 
 # Create and Configure rc.local
@@ -210,9 +225,9 @@ chmod +x /etc/rc.local
 cat >> /etc/privoxy/config <<-END
 user-manual /usr/share/doc/privoxy/user-manual
 confdir /etc/privoxy
-logdir /var/log/privoxy
+logdir /var/log/
 filterfile default.filter
-logfile logfile
+logfile privoxy.log
 listen-address  0.0.0.0:$PROXY_PORT
 toggle  1
 enable-remote-toggle  0
@@ -258,16 +273,51 @@ failregex = ^ TLS Error: incoming packet authentication failed from \[AF_INET\]<
 ignoreregex = 
 END
 
+cat >> /etc/fail2ban/filter.d/privoxy.local <<-END
+# Fail2Ban filter for selected OpenVPN rejections
+#
+#
+
+[Definition]
+
+# Example messages (other matched messages not seen in the testing server's logs):
+# Fri Sep 23 11:55:36 2016 TLS Error: incoming packet authentication failed from [AF_INET]59.90.146.160:51223
+# Thu Aug 25 09:36:02 2016 117.207.115.143:58922 TLS Error: TLS handshake failed
+
+failregex = ^ TLS Error: incoming packet authentication failed from \[AF_INET\]<HOST>:\d+$
+            ^ <HOST>:\d+ Connection reset, restarting
+            ^ <HOST>:\d+ TLS Auth Error
+            ^ <HOST>:\d+ TLS Error: TLS handshake failed$
+            ^ <HOST>:\d+ VERIFY ERROR
+
+ignoreregex = 
+END
+
 cat >> /etc/fail2ban/jail.d/openvpn <<-END
-# Fail2Ban configuration fragment for OpenVPN
 [openvpn]
 enabled  = true
 port     = $PORT
 protocol = tcp
 filter   = openvpn
 logpath  = /var/log/openvpn.log
-maxretry = 5
+maxretry = 15
 END
+
+cat >> /etc/fail2ban/jail.d/privoxy <<-END
+[privoxy]
+enabled  = true
+port     = $PROXY_PORT
+protocol = tcp
+filter   = privoxy
+logpath  = /var/log/privoxy.log
+maxretry = 15
+END
+
+# Configure menu
+cd /usr/local/bin/
+wget "https://raw.githubusercontent.com/yunolawliet/VPSauto/master/tool/premiummenu.zip" 
+unzip premiummenu.zip
+chmod +x /usr/local/bin/*
 
 echo "Done! Rebooting..."
 reboot
