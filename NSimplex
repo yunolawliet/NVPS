@@ -60,7 +60,7 @@ tar -xzvf /root/plugin.tgz -C /usr/lib/openvpn/
 chmod +x /usr/lib/openvpn/*
 
 # Server settings
-cat >> /etc/openvpn/server.conf <<-END
+cat > /etc/openvpn/server.conf <<-END
 port $PORT
 proto tcp
 dev tun
@@ -175,6 +175,19 @@ iptables -t nat -A POSTROUTING -o $(ip -4 route ls | grep default | grep -Po '(?
 iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -A INPUT -p tcp --dport $PORT  -m state --state NEW -j ACCEPT
 iptables -A INPUT -p tcp --dport $PROXY_PORT  -m state --state NEW -j ACCEPT
+
+iptables -A FORWARD -s 10.8.0.0/24 -p tcp --dport 443 -j DROP
+iptables -A FORWARD -i tun+ -j ACCEPT
+iptables -A INPUT -m string --string "BitTorrent" --algo bm -j DROP
+iptables -A INPUT -m string --string "BitTorrent protocol" --algo bm -j DROP
+iptables -A INPUT -m string --string "peer_id=" --algo bm -j DROP
+iptables -A INPUT -m string --string ".torrent" --algo bm -j DROP
+iptables -A INPUT -m string --string "torrent" --algo bm -j DROP
+iptables -A INPUT -m string --string ".magnet" --algo bm -j DROP
+iptables -A INPUT -m string --string "announce.php?passkey=" --algo bm -j DROP
+iptables -A INPUT -m string --string "get_peers" --algo bm -j DROP
+iptables -A INPUT -m string --string "announce_peer" --algo bm -j DROP
+iptables -A INPUT -m string --string "find_node" --algo bm -j DROP
 END
 
 # Create and Configure rc.local
@@ -186,6 +199,7 @@ rm -rf /etc/sysctl.d/*.conf
 cp /etc/simplex/sysctl.conf /etc/sysctl.conf
 sysctl --system &> /dev/null
 sysctl -p &> /dev/null
+bash /etc/simplex/iptables.sh
 nameserver $DNS1 > /etc/resolv.conf
 nameserver $DNS2 > /etc/resolv.conf
 END
