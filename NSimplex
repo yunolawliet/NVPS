@@ -188,9 +188,8 @@ iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
 iptables -A INPUT -j DROP
 
 # Anti-Torrent
-iptables -A FORWARD -i tun+ -j ACCEPT
 iptables -A FORWARD -s 10.8.0.0/24 -p tcp --dport 443 -j DROP
-
+iptables -A FORWARD -i tun+ -j ACCEPT
 iptables -A INPUT -m string --string "BitTorrent" --algo bm -j DROP
 iptables -A INPUT -m string --string "BitTorrent protocol" --algo bm -j DROP
 iptables -A INPUT -m string --string "peer_id=" --algo bm -j DROP
@@ -222,12 +221,12 @@ END
 chmod +x /etc/rc.local
 
 #PRIVOXY
-cat >> /etc/privoxy/config <<-END
+cat > /etc/privoxy/config <<-END
 user-manual /usr/share/doc/privoxy/user-manual
-confdir /etc/privoxy/config
-logdir /var/log/
+confdir /etc/privoxy
+logdir /var/log/privoxy
 filterfile default.filter
-logfile privoxy.log
+logfile logfile
 listen-address  0.0.0.0:$PROXY_PORT
 toggle  1
 enable-remote-toggle  0
