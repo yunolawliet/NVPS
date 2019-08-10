@@ -121,7 +121,11 @@ dev tun
 proto tcp
 remote $MYIP $PORT
 http-proxy $MYIP $PROXY_PORT
-http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.0"
+http-proxy-option CUSTOM-HEADER ""
+http-proxy-option CUSTOM-HEADER "POST https://e9413.g.akamaiedge.net HTTP/1.1"
+http-proxy-option CUSTOM-HEADER CONNECTION KEEP-ALIVE
+http-proxy-retry 
+http-proxy-timeout 5
 keepalive 10 60
 pull
 nobind
