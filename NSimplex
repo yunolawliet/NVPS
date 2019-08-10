@@ -22,6 +22,7 @@ echo "deb http://build.openvpn.net/debian/openvpn/release/2.4 stretch main" > /e
 
 # Requirements
 apt-get update
+<<<<<<< HEAD
 apt-get -y upgrade 
 apt-get -y install openvpn
 apt-get -y install easy-rsa
@@ -30,6 +31,13 @@ apt-get -y install ufw
 apt-get -y install fail2ban
 apt-get -y install iptables-persistent
 apt-get -y install build-essential
+=======
+apt-get -y -qq upgrade 
+apt-get -y -qq install openvpn
+apt-get -y -qq install easy-rsa
+apt-get -y -qq install privoxy
+apt-get -y -qq install build-essential
+>>>>>>> parent of 8ff1872... Update NSimplex
 
 #Flush any pre-existing rules
 iptables -F && iptables -X
@@ -314,7 +322,6 @@ echo '</ca>' >> /client.ovpn
 mkdir /etc/simplex/
 cat > /etc/simplex/sysctl.conf <<-END
 net.ipv4.ip_forward = 1
-net.ipv4.conf.eth0.forwarding = 1
 net.ipv4.conf.default.rp_filter = 1
 net.ipv4.conf.default.accept_source_route = 0
 kernel.sysrq = 0
@@ -342,6 +349,20 @@ net.ipv4.tcp_ecn = 0
 net.ipv4.route.flush = 1
 END
 
+<<<<<<< HEAD
+=======
+cat > /etc/simplex/iptables.sh <<-END
+#!/bin/sh -e
+PUBINET=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
+iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT
+iptables -t nat -A POSTROUTING -o $PUBINET -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $PUBINET -j MASQUERADE
+iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -A INPUT -p tcp --dport $PORT  -m state --state NEW -j ACCEPT
+iptables -A INPUT -p tcp --dport $PROXY_PORT  -m state --state NEW -j ACCEPT
+END
+
+>>>>>>> parent of 8ff1872... Update NSimplex
 # Create and Configure rc.local
 cat > /etc/rc.local <<-END
 #!/bin/sh -e
@@ -382,6 +403,7 @@ socket-timeout 300
 permit-access 0.0.0.0/0 $IP
 END
 
+<<<<<<< HEAD
 # UFW
 ufw allow $PORT
 ufw allow $PROXY_PORT
@@ -420,5 +442,7 @@ logpath  = /var/log/openvpn.log
 maxretry = 5
 END
 
+=======
+>>>>>>> parent of 8ff1872... Update NSimplex
 echo "Done! Rebooting..."
 reboot
