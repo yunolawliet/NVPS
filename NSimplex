@@ -22,194 +22,13 @@ echo "deb http://build.openvpn.net/debian/openvpn/release/2.4 stretch main" > /e
 
 # Requirements
 apt-get update
-<<<<<<< HEAD
 apt-get -y upgrade 
 apt-get -y install openvpn
 apt-get -y install easy-rsa
 apt-get -y install privoxy
 apt-get -y install ufw
 apt-get -y install fail2ban
-apt-get -y install iptables-persistent
 apt-get -y install build-essential
-=======
-apt-get -y -qq upgrade 
-apt-get -y -qq install openvpn
-apt-get -y -qq install easy-rsa
-apt-get -y -qq install privoxy
-apt-get -y -qq install build-essential
->>>>>>> parent of 8ff1872... Update NSimplex
-
-#Flush any pre-existing rules
-iptables -F && iptables -X
-
-# ipv4 iptables
-cat >> /etc/iptables/rules.v4 << END
-*filter
-# Allow all loopback (lo) traffic and reject anything
-# to localhost that does not originate from lo.
--A INPUT -i lo -j ACCEPT
--A OUTPUT -o lo -j ACCEPT
--I FORWARD -s 10.8.0.0/24 -j ACCEPT
--t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
--I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
-
-# Allow ping and ICMP error returns.
--A INPUT -p icmp -m state --state NEW --icmp-type 8 -j ACCEPT
--A INPUT -p icmp -m state --state ESTABLISHED,RELATED -j ACCEPT
--A OUTPUT -p icmp -j ACCEPT
-
-# Allow SSH.
--A INPUT -i $INTERFACE -p tcp -m state --state NEW,ESTABLISHED --dport 22 -j ACCEPT
--A OUTPUT -o $INTERFACE -p tcp -m state --state ESTABLISHED --sport 22 -j ACCEPT
-
-# Allow UDP/TCP traffic on ports
--A INPUT -i $INTERFACE -p tcp -m state --state NEW,ESTABLISHED --dport $PORT -j ACCEPT
--A OUTPUT -o $INTERFACE -p tcp -m state --state ESTABLISHED --sport $PORT -j ACCEPT
--A INPUT -i $INTERFACE -p tcp -m state --state NEW,ESTABLISHED --dport $PROXY_PORT -j ACCEPT
--A OUTPUT -o $INTERFACE -p tcp -m state --state ESTABLISHED --sport $PROXY_PORT -j ACCEPT
-
-# Allow DNS resolution and limited HTTP/S on $INTERFACE.
-# Necessary for updating the server and timekeeping.
--A INPUT -i $INTERFACE -p udp -m state --state ESTABLISHED --sport 53 -j ACCEPT
--A OUTPUT -o $INTERFACE -p udp -m state --state NEW,ESTABLISHED --dport 53 -j ACCEPT
--A INPUT -i $INTERFACE -p tcp -m state --state ESTABLISHED --sport 80 -j ACCEPT
--A INPUT -i $INTERFACE -p tcp -m state --state ESTABLISHED --sport 443 -j ACCEPT
--A OUTPUT -o $INTERFACE -p tcp -m state --state NEW,ESTABLISHED --dport 80 -j ACCEPT
--A OUTPUT -o $INTERFACE -p tcp -m state --state NEW,ESTABLISHED --dport 443 -j ACCEPT
-
-# Allow traffic on the TUN interface so OpenVPN can communicate with $INTERFACE.
--A INPUT -i tun0 -j ACCEPT
--A OUTPUT -o tun0 -j ACCEPT
-
-# Log any packets which don't fit the rules above.
-# (optional but useful)
--A INPUT -m limit --limit 3/min -j LOG --log-prefix "iptables_INPUT_denied: " --log-level 4
--A FORWARD -m limit --limit 3/min -j LOG --log-prefix "iptables_FORWARD_denied: " --log-level 4
--A OUTPUT -m limit --limit 3/min -j LOG --log-prefix "iptables_OUTPUT_denied: " --log-level 4
-
-# then reject them.
--A INPUT -j REJECT
--A FORWARD -j REJECT
--A OUTPUT -j REJECT
-
-
-# ANTI-TORRENT ############################
--N LOGDROP > /dev/null 2> /dev/null
--F LOGDROP
--A LOGDROP -j DROP
-
-#Torrent
--D FORWARD -m string --algo bm --string "BitTorrent" -j LOGDROP 
--D FORWARD -m string --algo bm --string "BitTorrent protocol" -j LOGDROP
--D FORWARD -m string --algo bm --string "peer_id=" -j LOGDROP
--D FORWARD -m string --algo bm --string ".torrent" -j LOGDROP
--D FORWARD -m string --algo bm --string "announce.php?passkey=" -j LOGDROP 
--D FORWARD -m string --algo bm --string "torrent" -j LOGDROP
--D FORWARD -m string --algo bm --string "announce" -j LOGDROP
--D FORWARD -m string --algo bm --string "info_hash" -j LOGDROP
-
-# DHT keyword
--A FORWARD -m string --string "get_peers" --algo bm -j DROP
--A FORWARD -m string --string "announce_peer" --algo bm -j LOGDROP
--A FORWARD -m string --string "find_node" --algo bm -j LOGDROP
-
-## Modified debia commands
-
--A FORWARD -p udp -m string --algo bm --string "BitTorrent" -j DROP
--A FORWARD -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--A FORWARD -p udp -m string --algo bm --string "peer_id=" -j DROP
--A FORWARD -p udp -m string --algo bm --string ".torrent" -j DROP
--A FORWARD -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--A FORWARD -p udp -m string --algo bm --string "torrent" -j DROP
--A FORWARD -p udp -m string --algo bm --string "announce" -j DROP
--A FORWARD -p udp -m string --algo bm --string "info_hash" -j DROP
--A FORWARD -p udp -m string --algo bm --string "tracker" -j DROP
-
--A INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
--A INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--A INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
--A INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
--A INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--A INPUT -p udp -m string --algo bm --string "torrent" -j DROP
--A INPUT -p udp -m string --algo bm --string "announce" -j DROP
--A INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
--A INPUT -p udp -m string --algo bm --string "tracker" -j DROP
-
--I INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
--I INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--I INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
--I INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
--I INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--I INPUT -p udp -m string --algo bm --string "torrent" -j DROP
--I INPUT -p udp -m string --algo bm --string "announce" -j DROP
--I INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
--I INPUT -p udp -m string --algo bm --string "tracker" -j DROP
-
--D INPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
--D INPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--D INPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
--D INPUT -p udp -m string --algo bm --string ".torrent" -j DROP
--D INPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--D INPUT -p udp -m string --algo bm --string "torrent" -j DROP
--D INPUT -p udp -m string --algo bm --string "announce" -j DROP
--D INPUT -p udp -m string --algo bm --string "info_hash" -j DROP
--D INPUT -p udp -m string --algo bm --string "tracker" -j DROP
-
--I OUTPUT -p udp -m string --algo bm --string "BitTorrent" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "BitTorrent protocol" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "peer_id=" -j DROP
--I OUTPUT -p udp -m string --algo bm --string ".torrent" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "announce.php?passkey=" -j DROP 
--I OUTPUT -p udp -m string --algo bm --string "torrent" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "announce" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "info_hash" -j DROP
--I OUTPUT -p udp -m string --algo bm --string "tracker" -j DROP
-
-## Delete
-
--D INPUT -m string --algo bm --string "BitTorrent" -j DROP
--D INPUT -m string --algo bm --string "BitTorrent protocol" -j DROP
--D INPUT -m string --algo bm --string "peer_id=" -j DROP
--D INPUT -m string --algo bm --string ".torrent" -j DROP
--D INPUT -m string --algo bm --string "announce.php?passkey=" -j DROP 
--D INPUT -m string --algo bm --string "torrent" -j DROP
--D INPUT -m string --algo bm --string "announce" -j DROP
--D INPUT -m string --algo bm --string "info_hash" -j DROP
--D INPUT -m string --algo bm --string "tracker" -j DROP
-
--D OUTPUT -m string --algo bm --string "BitTorrent" -j DROP
--D OUTPUT -m string --algo bm --string "BitTorrent protocol" -j DROP
--D OUTPUT -m string --algo bm --string "peer_id=" -j DROP
--D OUTPUT -m string --algo bm --string ".torrent" -j DROP
--D OUTPUT -m string --algo bm --string "announce.php?passkey=" -j DROP 
--D OUTPUT -m string --algo bm --string "torrent" -j DROP
--D OUTPUT -m string --algo bm --string "announce" -j DROP
--D OUTPUT -m string --algo bm --string "info_hash" -j DROP
--D OUTPUT -m string --algo bm --string "tracker" -j DROP
-
--D FORWARD -m string --algo bm --string "BitTorrent" -j DROP
--D FORWARD -m string --algo bm --string "BitTorrent protocol" -j DROP
--D FORWARD -m string --algo bm --string "peer_id=" -j DROP
--D FORWARD -m string --algo bm --string ".torrent" -j DROP
--D FORWARD -m string --algo bm --string "announce.php?passkey=" -j DROP 
--D FORWARD -m string --algo bm --string "torrent" -j DROP
--D FORWARD -m string --algo bm --string "announce" -j DROP
--D FORWARD -m string --algo bm --string "info_hash" -j DROP
--D FORWARD -m string --algo bm --string "tracker" -j DROP 
-COMMIT
-END
-
-# Disable ipv6
-echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
-
-# Refresh with the new configuration
-sysctl -p
-
-iptables-restore < /etc/iptables/rules.v4
-ip6tables-restore < /etc/iptables/rules.v6
-
-# Re-configure persistency
-dpkg-reconfigure -y iptables-persistent
 
 # OpenVPN
 mkdir /etc/openvpn/easy-rsa/
@@ -349,20 +168,15 @@ net.ipv4.tcp_ecn = 0
 net.ipv4.route.flush = 1
 END
 
-<<<<<<< HEAD
-=======
 cat > /etc/simplex/iptables.sh <<-END
 #!/bin/sh -e
-PUBINET=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
 iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT
-iptables -t nat -A POSTROUTING -o $PUBINET -j MASQUERADE
-iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $PUBINET -j MASQUERADE
+iptables -t nat -A POSTROUTING -o $(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1) -j MASQUERADE
 iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -A INPUT -p tcp --dport $PORT  -m state --state NEW -j ACCEPT
 iptables -A INPUT -p tcp --dport $PROXY_PORT  -m state --state NEW -j ACCEPT
 END
 
->>>>>>> parent of 8ff1872... Update NSimplex
 # Create and Configure rc.local
 cat > /etc/rc.local <<-END
 #!/bin/sh -e
@@ -403,7 +217,6 @@ socket-timeout 300
 permit-access 0.0.0.0/0 $IP
 END
 
-<<<<<<< HEAD
 # UFW
 ufw allow $PORT
 ufw allow $PROXY_PORT
@@ -442,7 +255,5 @@ logpath  = /var/log/openvpn.log
 maxretry = 5
 END
 
-=======
->>>>>>> parent of 8ff1872... Update NSimplex
 echo "Done! Rebooting..."
 reboot
