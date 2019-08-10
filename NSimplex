@@ -404,6 +404,7 @@ permit-access 0.0.0.0/0 $IP
 END
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # UFW
 ufw allow $PORT
 ufw allow $PROXY_PORT
@@ -442,6 +443,8 @@ logpath  = /var/log/openvpn.log
 maxretry = 5
 END
 
+=======
+>>>>>>> parent of 8ff1872... Update NSimplex
 =======
 >>>>>>> parent of 8ff1872... Update NSimplex
 echo "Done! Rebooting..."
