@@ -115,6 +115,8 @@ proto tcp
 remote $IP $PORT
 http-proxy $IP $PROXY_PORT
 http-proxy-option CUSTOM-HEADER $PAYLOAD
+http-proxy-option CUSTOM-HEADER ""
+http-proxy-option CUSTOM-HEADER CONNECTION KEEP-ALIVE
 keepalive 10 60
 pull
 nobind
