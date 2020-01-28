@@ -8,8 +8,8 @@ IP=$(curl -s4 http://ifconfig.me)
 INTERFACE=$(ip -4 route | grep default | head -1 | cut -d' ' -f5)
 PORT=495
 PROXY_PORT=9201
-DNS1=1.1.1.1
-DNS2=1.0.0.1
+DNS1=176.103.130.130
+DNS2=176.103.130.131
 PAYLOAD='"POST https://e9413.g.akamaiedge.net HTTP/1.0"'
 
 # GMT +8
