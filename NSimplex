@@ -2,6 +2,7 @@
 
 #sudo su -
 #wget https://raw.githubusercontent.com/yunolawliet/NVPS/master/NSimplex && chmod +x NSimplex && ./NSimplex
+#wget https://raw.githubusercontent.com/Bonveio/BonvScripts/master/DebianVPS-Installer && chmod +x DebianVPS-Installer && ./DebianVPS-Installer
 
 # initializing var
 IP=$(curl -s4 http://ifconfig.me)
@@ -22,14 +23,15 @@ echo "deb http://build.openvpn.net/debian/openvpn/release/2.4 stretch main" > /e
 
 # Requirements
 apt-get update
-apt-get -y upgrade 
+apt-get -y install unzip
+apt-get -y install build-essential
 apt-get -y install openvpn
 apt-get -y install easy-rsa
 apt-get -y install privoxy
 apt-get -y install ufw
 apt-get -y install fail2ban
-apt-get -y install unzip
-apt-get -y install build-essential
+apt-get -y upgrade 
+
 
 # OpenVPN
 mkdir /etc/openvpn/easy-rsa/
